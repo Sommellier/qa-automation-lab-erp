@@ -1,0 +1,39 @@
+import { useEffect, useState, type FormEvent } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { z } from 'zod';
+import { LoadingScreen } from '../components/LoadingScreen';
+import { useAuth } from '../hooks/useAuth';
+import { ApiError } from '../services/api';
+import { categoriesApi } from '../services/category.service';
+import { productsApi } from '../services/product.service';
+import type { CategoryOption } from '../types/category';
+
+const schema = z.object({
+  name: z.string().trim().min(1, 'Nome é obrigatório.').min(2).max(120),
+  sku: z.string().trim().min(1, 'SKU é obrigatório.').transform((value) => value.toUpperCase()).pipe(z.string().min(3).max(40).regex(/^[A-Z0-9][A-Z0-9-]*$/, 'SKU deve conter apenas letras, números e hífen.')),
+  description: z.string().trim().max(1000, 'Descrição deve ter no máximo 1000 caracteres.'),
+  price: z.string().trim().regex(/^\d{1,10}(?:\.\d{1,2})?$/, 'Informe um preço válido.'),
+  stock: z.string().trim().regex(/^\d+$/, 'Informe uma quantidade de estoque válida.'),
+  categoryId: z.uuid('Categoria é obrigatória.'), active: z.boolean(),
+});
+interface FormState { name: string; sku: string; description: string; price: string; stock: string; categoryId: string; active: boolean }
+const initial: FormState = { name: '', sku: '', description: '', price: '', stock: '0', categoryId: '', active: true };
+
+export function ProductFormPage() {
+  const { id } = useParams<{ id: string }>(); const editing = Boolean(id); const { token } = useAuth(); const navigate = useNavigate();
+  const [form, setForm] = useState(initial); const [categories, setCategories] = useState<CategoryOption[]>([]); const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
+  const [loading, setLoading] = useState(true); const [loadError, setLoadError] = useState(''); const [formError, setFormError] = useState(''); const [saving, setSaving] = useState(false);
+  useEffect(() => { let active = true; async function load() { if (!token) return; try {
+    const options = await categoriesApi.options(token);
+    if (editing && id) {
+      const product = await productsApi.getById(token, id);
+      const current = { id: product.category.id, name: product.category.name, active: product.category.active };
+      const available = options.some((option) => option.id === current.id) ? options : [current, ...options];
+      if (active) { setCategories(available); setForm({ name: product.name, sku: product.sku, description: product.description ?? '', price: product.price, stock: String(product.stock), categoryId: product.categoryId, active: product.active }); }
+    } else if (active) { setCategories(options); setForm((current) => ({ ...current, categoryId: options[0]?.id ?? '' })); }
+  } catch (error) { if (active) setLoadError(error instanceof ApiError ? error.message : 'Não foi possível carregar o formulário.'); } finally { if (active) setLoading(false); } } void load(); return () => { active = false; }; }, [editing, id, token]);
+  async function submit(event: FormEvent) { event.preventDefault(); setFormError(''); const parsed = schema.safeParse(form); if (!parsed.success) { const fields = z.flattenError(parsed.error).fieldErrors; setErrors({ name: fields.name?.[0], sku: fields.sku?.[0], description: fields.description?.[0], price: fields.price?.[0], stock: fields.stock?.[0], categoryId: fields.categoryId?.[0] }); return; } if (!token) return; setErrors({}); setSaving(true); const data = { name: parsed.data.name, sku: parsed.data.sku, description: parsed.data.description, price: parsed.data.price, categoryId: parsed.data.categoryId }; try { if (editing && id) { await productsApi.update(token, id, data); navigate('/products', { replace: true, state: { toast: 'Produto atualizado com sucesso.' } }); } else { await productsApi.create(token, { ...data, stock: Number(parsed.data.stock), active: parsed.data.active }); navigate('/products', { replace: true, state: { toast: 'Produto cadastrado com sucesso.' } }); } } catch (error) { setFormError(error instanceof ApiError ? error.message : 'Não foi possível salvar o produto.'); } finally { setSaving(false); } }
+  if (loading) return <LoadingScreen />; if (loadError) return <main className="centered-page"><section className="message-card"><h1>Não foi possível editar</h1><p role="alert">{loadError}</p><Link to="/products" className="button-link">Voltar para produtos</Link></section></main>;
+  const field = (name: 'name' | 'sku' | 'price' | 'stock', label: string, type = 'text') => <div className="field-group"><label htmlFor={`product-${name}`}>{label}</label><input id={`product-${name}`} type={type} data-testid={`product-${name}`} value={form[name]} onChange={(event) => setForm((current) => ({ ...current, [name]: event.target.value }))} aria-invalid={Boolean(errors[name])} disabled={saving} />{errors[name] && <span className="field-error">{errors[name]}</span>}</div>;
+  return <main className="content-page form-page" data-testid="product-form-page"><div className="page-heading"><div><p className="eyebrow">GESTÃO DE PRODUTOS</p><h1>{editing ? 'Editar produto' : 'Novo produto'}</h1><p className="subtitle">{editing ? 'Atualize os dados do catálogo. Estoque é controlado pelo histórico.' : 'Cadastre os dados comerciais do produto.'}</p></div></div><form className="entity-form" onSubmit={(event) => void submit(event)} noValidate>{formError && <div className="form-error" role="alert" data-testid="product-form-error">{formError}</div>}{field('name', 'Nome')}{field('sku', 'SKU')}<div className="field-group"><label htmlFor="product-description">Descrição</label><textarea id="product-description" data-testid="product-description" value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} aria-invalid={Boolean(errors.description)} disabled={saving} />{errors.description && <span className="field-error">{errors.description}</span>}</div><div className="form-grid">{field('price', 'Preço')}{editing ? <div className="field-group"><label htmlFor="product-stock">Estoque</label><input id="product-stock" data-testid="product-stock" value={form.stock} readOnly /><small>Use a página de movimentações para alterar o saldo.</small></div> : field('stock', 'Estoque inicial', 'number')}</div><div className="field-group"><label htmlFor="product-category">Categoria</label><select id="product-category" data-testid="product-category" value={form.categoryId} onChange={(event) => setForm((current) => ({ ...current, categoryId: event.target.value }))} aria-invalid={Boolean(errors.categoryId)} disabled={saving || categories.length === 0}><option value="">Selecione</option>{categories.map((category) => <option key={category.id} value={category.id} disabled={category.active === false && category.id !== form.categoryId}>{category.name}{category.active === false ? ' (inativa — categoria atual)' : ''}</option>)}</select>{errors.categoryId && <span className="field-error">{errors.categoryId}</span>}{categories.length === 0 && <small>Nenhuma categoria ativa disponível.</small>}</div>{!editing && <div className="field-group"><label htmlFor="product-status">Status</label><select id="product-status" data-testid="product-status" value={String(form.active)} onChange={(event) => setForm((current) => ({ ...current, active: event.target.value === 'true' }))} disabled={saving}><option value="true">Ativo</option><option value="false">Inativo</option></select></div>}<div className="form-actions">{editing && id && <Link to={`/products/${id}/stock`} className="secondary-link">Ver estoque</Link>}<Link to="/products" className="secondary-link" data-testid="product-cancel">Cancelar</Link><button type="submit" className="primary-button compact-button" data-testid="product-save" disabled={saving || categories.length === 0}>{saving ? 'Salvando...' : 'Salvar'}</button></div></form></main>;
+}

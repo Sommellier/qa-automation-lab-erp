@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+  <NFe><infNFe Id="NFe35261098765432000100550010000001241123456781" versao="4.00">
+    <ide><natOp>Venda de mercadoria</natOp><mod>55</mod><serie>1</serie><nNF>124</nNF><dhEmi>2026-10-27T11:00:00-03:00</dhEmi><tpNF>1</tpNF></ide>
+    <emit><CNPJ>98765432000100</CNPJ><xNome>Empresa Fiscal de Demonstração</xNome></emit>
+    <dest><CPF>12345678900</CPF><xNome>Carlos Silva</xNome></dest>
+    <det nItem="1"><prod><cProd>CHAIR001</cProd><xProd>Cadeira Office</xProd><NCM>94013900</NCM><CFOP>5102</CFOP><uCom>UN</uCom><qCom>1.0000</qCom><vUnCom>899.9000</vUnCom><vProd>899.90</vProd></prod><imposto><ICMS><ICMS00><vICMS>161.98</vICMS></ICMS00></ICMS></imposto></det>
+    <total><ICMSTot><vProd>899.90</vProd><vDesc>0.00</vDesc><vFrete>0.00</vFrete><vOutro>0.00</vOutro><vNF>899.90</vNF><vICMS>161.98</vICMS></ICMSTot></total>
+  </infNFe></NFe>
+  <protNFe><infProt><chNFe>35261098765432000100550010000001241123456781</chNFe><cStat>100</cStat><xMotivo>Autorizado o uso da NF-e</xMotivo></infProt></protNFe>
+</nfeProc>

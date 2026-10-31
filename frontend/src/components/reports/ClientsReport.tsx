@@ -1,0 +1,32 @@
+import { useEffect, useState, type FormEvent } from 'react';
+import { useAuth } from '../../hooks/useAuth';
+import { reportsApi } from '../../services/report.service';
+import type { ClientReportParams, ClientReportResponse } from '../../types/report';
+import { ReportError, ReportLoading, ReportMetric, ReportPagination, reportDateFormatter, validPeriod } from './ReportUi';
+
+interface Draft { search: string; active: '' | 'true' | 'false'; createdFrom: string; createdTo: string; sortBy: ClientReportParams['sortBy']; sortOrder: ClientReportParams['sortOrder'] }
+const initial: Draft = { search: '', active: '', createdFrom: '', createdTo: '', sortBy: 'name', sortOrder: 'asc' };
+function params(draft: Draft, page = 1): ClientReportParams { return { page, pageSize: 10, sortBy: draft.sortBy, sortOrder: draft.sortOrder, ...(draft.search ? { search: draft.search.trim() } : {}), ...(draft.active ? { active: draft.active === 'true' } : {}), ...(draft.createdFrom ? { createdFrom: draft.createdFrom } : {}), ...(draft.createdTo ? { createdTo: draft.createdTo } : {}) }; }
+
+export function ClientsReport() {
+  const { token } = useAuth(); const [draft, setDraft] = useState(initial); const [query, setQuery] = useState<ClientReportParams>(() => params(initial));
+  const [response, setResponse] = useState<ClientReportResponse | null>(null); const [loading, setLoading] = useState(true); const [error, setError] = useState(false); const [validation, setValidation] = useState(''); const [retry, setRetry] = useState(0);
+  useEffect(() => { let active = true; async function load() { if (!token) return; setLoading(true); setError(false); try { const data = await reportsApi.clients(token, query); if (active) setResponse(data); } catch { if (active) { setResponse(null); setError(true); } } finally { if (active) setLoading(false); } } void load(); return () => { active = false; }; }, [query, retry, token]);
+  function apply(event: FormEvent) { event.preventDefault(); if (!validPeriod(draft.createdFrom, draft.createdTo)) { setValidation('A data inicial não pode ser posterior à data final.'); return; } setValidation(''); setQuery(params(draft)); }
+  function clear() { setDraft(initial); setValidation(''); setQuery(params(initial)); }
+  if (loading) return <ReportLoading />;
+  if (error || !response) return <ReportError onRetry={() => setRetry((value) => value + 1)} />;
+  return <section data-testid="clients-report">
+    <form className="filters-card reports-filters" onSubmit={apply}>
+      <div className="filter-field filter-search"><label htmlFor="clients-report-search">Nome, documento ou e-mail</label><input id="clients-report-search" value={draft.search} onChange={(event) => setDraft((current) => ({ ...current, search: event.target.value }))} /></div>
+      <div className="filter-field"><label htmlFor="clients-report-active">Status</label><select id="clients-report-active" value={draft.active} onChange={(event) => setDraft((current) => ({ ...current, active: event.target.value as Draft['active'] }))}><option value="">Todos</option><option value="true">Ativos</option><option value="false">Inativos</option></select></div>
+      <div className="filter-field"><label htmlFor="clients-report-from">Cadastro inicial</label><input id="clients-report-from" data-testid="reports-date-from" type="date" value={draft.createdFrom} onChange={(event) => setDraft((current) => ({ ...current, createdFrom: event.target.value }))} /></div>
+      <div className="filter-field"><label htmlFor="clients-report-to">Cadastro final</label><input id="clients-report-to" data-testid="reports-date-to" type="date" value={draft.createdTo} onChange={(event) => setDraft((current) => ({ ...current, createdTo: event.target.value }))} /></div>
+      <div className="filter-field"><label htmlFor="clients-report-sort">Ordenar por</label><select id="clients-report-sort" value={draft.sortBy} onChange={(event) => setDraft((current) => ({ ...current, sortBy: event.target.value as Draft['sortBy'] }))}><option value="name">Nome</option><option value="createdAt">Cadastro</option><option value="updatedAt">Atualização</option></select></div>
+      <div className="filter-field"><label htmlFor="clients-report-order">Ordem</label><select id="clients-report-order" value={draft.sortOrder} onChange={(event) => setDraft((current) => ({ ...current, sortOrder: event.target.value as Draft['sortOrder'] }))}><option value="asc">Crescente</option><option value="desc">Decrescente</option></select></div>
+      {validation && <div className="form-error report-filter-error" role="alert">{validation}</div>}<div className="filter-actions"><button type="submit" className="primary-button compact-button" data-testid="reports-apply">Aplicar filtros</button><button type="button" className="secondary-button" data-testid="reports-clear" onClick={clear}>Limpar</button></div>
+    </form>
+    <div className="reports-metrics"><ReportMetric label="Total de clientes" value={response.indicators.total} testId="report-total" /><ReportMetric label="Clientes ativos" value={response.indicators.active} testId="report-active" tone="success" /><ReportMetric label="Clientes inativos" value={response.indicators.inactive} testId="report-inactive" tone="danger" /><ReportMetric label="Novos no período" value={response.indicators.newInPeriod} testId="report-new-period" /></div>
+    <section className="table-card"><div className="table-summary">{response.pagination.total} resultado(s)</div><div className="table-scroll"><table data-testid="clients-report-table"><thead><tr><th>Nome</th><th>Documento</th><th>E-mail</th><th>Telefone</th><th>Status</th><th>Cadastro</th><th>Atualização</th></tr></thead><tbody>{response.data.length === 0 ? <tr><td colSpan={7} className="table-message">Nenhum resultado encontrado para os filtros selecionados.</td></tr> : response.data.map((client) => <tr key={client.id}><td><strong>{client.name}</strong></td><td>{client.document}</td><td>{client.email}</td><td>{client.phone ?? '—'}</td><td><span className={`status-badge ${client.active ? 'status-active' : 'status-inactive'}`}>{client.active ? 'Ativo' : 'Inativo'}</span></td><td>{reportDateFormatter.format(new Date(client.createdAt))}</td><td>{reportDateFormatter.format(new Date(client.updatedAt))}</td></tr>)}</tbody></table></div><ReportPagination pagination={response.pagination} onPage={(page) => setQuery((current) => ({ ...current, page }))} /></section>
+  </section>;
+}

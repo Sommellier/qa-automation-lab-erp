@@ -1,0 +1,20 @@
+import { UserRole } from '@prisma/client';
+import { Router } from 'express';
+import { CategoryController } from '../controllers/category.controller.js';
+import { authenticate } from '../middlewares/authenticate.middleware.js';
+import { authorizeRoles } from '../middlewares/authorize.middleware.js';
+import { validateBody } from '../middlewares/validate.middleware.js';
+import { PrismaCategoryRepository } from '../repositories/category.repository.js';
+import { createCategorySchema, updateCategorySchema, updateCategoryStatusSchema } from '../schemas/category.schema.js';
+import { auditLogger } from '../services/audit.service.js';
+import { CategoryService } from '../services/category.service.js';
+
+const controller = new CategoryController(new CategoryService(new PrismaCategoryRepository(), auditLogger));
+export const categoryRouter = Router();
+categoryRouter.use(authenticate);
+categoryRouter.get('/options', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA, UserRole.VISUALIZADOR), controller.options);
+categoryRouter.get('/', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA, UserRole.VISUALIZADOR), controller.list);
+categoryRouter.get('/:id', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA, UserRole.VISUALIZADOR), controller.getById);
+categoryRouter.post('/', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA), validateBody(createCategorySchema), controller.create);
+categoryRouter.patch('/:id', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA), validateBody(updateCategorySchema), controller.update);
+categoryRouter.patch('/:id/status', authorizeRoles(UserRole.ADMIN), validateBody(updateCategoryStatusSchema), controller.updateStatus);

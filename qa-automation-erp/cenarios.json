@@ -1,0 +1,183 @@
+[
+  {
+    "description": "  Como usuário cadastrado no ERP\n  Quero realizar minha autenticação\n  Para acessar funcionalidades autorizadas",
+    "elements": [
+      {
+        "description": "",
+        "id": "autenticação-de-usuários;login-com-credenciais-válidas",
+        "keyword": "Esquema do Cenário",
+        "line": 14,
+        "name": "Login com credenciais válidas",
+        "steps": [
+          {
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            },
+            "keyword": "Before",
+            "hidden": true
+          },
+          {
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            },
+            "arguments": [],
+            "keyword": "Dado ",
+            "line": 11,
+            "name": "que estou na página de login",
+            "match": {
+              "location": "src\\step-definitions\\autenticacao\\LoginSteps.ts:11"
+            }
+          },
+          {
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            },
+            "arguments": [],
+            "keyword": "Quando ",
+            "line": 15,
+            "name": "realizo login com o perfil \"Admin\"",
+            "match": {
+              "location": "src\\step-definitions\\autenticacao\\LoginSteps.ts:17"
+            }
+          },
+          {
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            },
+            "arguments": [],
+            "keyword": "Então ",
+            "line": 16,
+            "name": "devo acessar o dashboard"
+          },
+          {
+            "result": {
+              "status": "undefined",
+              "duration": 0
+            },
+            "arguments": [],
+            "keyword": "E ",
+            "line": 17,
+            "name": "devo visualizar a opção de sair"
+          },
+          {
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            },
+            "keyword": "After",
+            "hidden": true
+          }
+        ],
+        "tags": [
+          {
+            "name": "@Autenticacao",
+            "line": 4
+          },
+          {
+            "name": "@smoke",
+            "line": 13
+          },
+          {
+            "name": "@positivo",
+            "line": 13
+          },
+          {
+            "name": "@CT-Login",
+            "line": 13
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "autenticação-de-usuários;login-com-credenciais-inválidas",
+        "keyword": "Esquema do Cenário",
+        "line": 21,
+        "name": "Login com credenciais inválidas",
+        "steps": [
+          {
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            },
+            "keyword": "Before",
+            "hidden": true
+          },
+          {
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            },
+            "arguments": [],
+            "keyword": "Dado ",
+            "line": 11,
+            "name": "que estou na página de login",
+            "match": {
+              "location": "src\\step-definitions\\autenticacao\\LoginSteps.ts:11"
+            }
+          },
+          {
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            },
+            "arguments": [],
+            "keyword": "Quando ",
+            "line": 22,
+            "name": "realizo login com o perfil \"usuario_inexistente\"",
+            "match": {
+              "location": "src\\step-definitions\\autenticacao\\LoginSteps.ts:17"
+            }
+          },
+          {
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            },
+            "arguments": [],
+            "keyword": "Então ",
+            "line": 23,
+            "name": "devo visualizar a mensagem de credenciais inválidas",
+            "match": {
+              "location": "src\\step-definitions\\autenticacao\\LoginSteps.ts:26"
+            }
+          },
+          {
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            },
+            "keyword": "After",
+            "hidden": true
+          }
+        ],
+        "tags": [
+          {
+            "name": "@Autenticacao",
+            "line": 4
+          },
+          {
+            "name": "@negativo",
+            "line": 20
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "autenticação-de-usuários",
+    "line": 5,
+    "keyword": "Funcionalidade",
+    "name": "Autenticação de usuários",
+    "tags": [
+      {
+        "name": "@Autenticacao",
+        "line": 4
+      }
+    ],
+    "uri": "features\\autenticacao\\login.feature"
+  }
+]

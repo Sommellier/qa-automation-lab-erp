@@ -1,0 +1,14 @@
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import { ApiError } from '../services/api';
+import { productsApi } from '../services/product.service';
+import { purchasesApi } from '../services/purchase.service';
+import type { CostHistoryItem } from '../types/purchase';
+import { formatCurrency } from '../utils/currency';
+
+export function ProductCostHistoryPage() {
+  const { id } = useParams<{ id: string }>(); const { token } = useAuth(); const [name, setName] = useState('Produto'); const [data, setData] = useState<CostHistoryItem[]>([]); const [page, setPage] = useState(1); const [totalPages, setTotalPages] = useState(0); const [error, setError] = useState('');
+  useEffect(() => { let active = true; if (!token || !id) return; Promise.all([productsApi.getById(token, id), purchasesApi.costHistory(token, id, page)]).then(([product, history]) => { if (active) { setName(product.name); setData(history.data); setTotalPages(history.pagination.totalPages); } }).catch((requestError) => { if (active) setError(requestError instanceof ApiError ? requestError.message : 'Não foi possível carregar o histórico de custo.'); }); return () => { active = false; }; }, [id, page, token]);
+  return <main className="content-page"><div className="page-heading"><div><p className="eyebrow">HISTÓRICO DE CUSTO</p><h1>{name}</h1><p className="subtitle">Custos efetivamente recebidos, preservados por fornecedor e data.</p></div><Link className="secondary-link" to={`/products/${id}`}>Voltar ao produto</Link></div>{error && <div className="form-error" role="alert">{error}</div>}<section className="table-card"><div className="table-summary">{data.length} registro(s) nesta página</div><div className="table-scroll"><table data-testid="cost-history-table"><thead><tr><th>Data</th><th>Fornecedor</th><th>Pedido</th><th>Recebimento</th><th>Quantidade</th><th>Custo unitário</th><th>Subtotal</th></tr></thead><tbody>{!data.length ? <tr><td colSpan={7} className="table-message">Nenhum custo recebido para este produto.</td></tr> : data.map((item) => <tr key={item.id}><td>{new Intl.DateTimeFormat('pt-BR').format(new Date(item.receipt.receivedAt))}</td><td>{item.receipt.purchaseOrder.supplier.name}</td><td><Link to={`/purchases/${item.receipt.purchaseOrder.id}`}>{item.receipt.purchaseOrder.number}</Link></td><td>{item.receipt.number}</td><td>{item.quantity}</td><td>{formatCurrency(item.unitCost)}</td><td>{formatCurrency(item.subtotal)}</td></tr>)}</tbody></table></div>{totalPages > 1 && <nav className="pagination"><button disabled={page === 1} onClick={() => setPage((value) => value - 1)}>‹ Anterior</button><span>Página {page} de {totalPages}</span><button disabled={page === totalPages} onClick={() => setPage((value) => value + 1)}>Próximo ›</button></nav>}</section></main>;
+}

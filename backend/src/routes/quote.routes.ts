@@ -1,0 +1,37 @@
+import { UserRole } from '@prisma/client';
+import { Router } from 'express';
+import { QuoteController } from '../controllers/quote.controller.js';
+import { authenticate } from '../middlewares/authenticate.middleware.js';
+import { authorizeRoles } from '../middlewares/authorize.middleware.js';
+import { validateBody } from '../middlewares/validate.middleware.js';
+import { PrismaStockRepository } from '../repositories/stock.repository.js';
+import { createQuoteSchema, quoteCommentSchema, quoteOptionalCommentSchema, rejectQuoteSchema, renewQuoteSchema, updateCommissionRuleSchema, updateQuoteApprovalRuleSchema, updateQuoteSchema } from '../schemas/quote.schema.js';
+import { auditLogger } from '../services/audit.service.js';
+import { QuoteService } from '../services/quote.service.js';
+import { StockService } from '../services/stock.service.js';
+
+const stock = new StockService(new PrismaStockRepository(), auditLogger);
+const controller = new QuoteController(new QuoteService(stock, auditLogger));
+export const quoteRouter = Router();
+quoteRouter.use(authenticate);
+const view = authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA, UserRole.VISUALIZADOR);
+const operate = authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA);
+const admin = authorizeRoles(UserRole.ADMIN);
+
+quoteRouter.get('/setup', operate, controller.setup);
+quoteRouter.get('/approval-rules', view, controller.approvalRules);
+quoteRouter.patch('/approval-rules/:role', admin, validateBody(updateQuoteApprovalRuleSchema), controller.updateApprovalRule);
+quoteRouter.get('/commission-rules', view, controller.commissionRules);
+quoteRouter.patch('/commission-rules/:userId', admin, validateBody(updateCommissionRuleSchema), controller.updateCommissionRule);
+quoteRouter.get('/commissions', view, controller.commissions);
+quoteRouter.get('/', view, controller.list);
+quoteRouter.post('/', operate, validateBody(createQuoteSchema), controller.create);
+quoteRouter.get('/:id', view, controller.get);
+quoteRouter.put('/:id', operate, validateBody(updateQuoteSchema), controller.update);
+quoteRouter.post('/:id/submit', operate, validateBody(quoteOptionalCommentSchema), controller.submit);
+quoteRouter.post('/:id/approve', operate, validateBody(quoteOptionalCommentSchema), controller.approve);
+quoteRouter.post('/:id/reject', operate, validateBody(rejectQuoteSchema), controller.reject);
+quoteRouter.post('/:id/reservations/renew', operate, validateBody(renewQuoteSchema), controller.renew);
+quoteRouter.post('/:id/notes', operate, validateBody(quoteCommentSchema), controller.note);
+quoteRouter.post('/:id/cancel', operate, validateBody(quoteOptionalCommentSchema), controller.cancel);
+quoteRouter.post('/:id/convert', operate, controller.convert);

@@ -1,0 +1,20 @@
+import { UserRole } from '@prisma/client';
+import { Router } from 'express';
+import { PayableController } from '../controllers/payable.controller.js';
+import { authenticate } from '../middlewares/authenticate.middleware.js';
+import { authorizeRoles } from '../middlewares/authorize.middleware.js';
+import { validateBody } from '../middlewares/validate.middleware.js';
+import { PrismaPayableRepository } from '../repositories/payable.repository.js';
+import { registerPaymentSchema, reversePaymentSchema } from '../schemas/payable.schema.js';
+import { auditLogger } from '../services/audit.service.js';
+import { PayableService } from '../services/payable.service.js';
+
+const controller = new PayableController(new PayableService(new PrismaPayableRepository(), auditLogger));
+export const payableRouter = Router();
+payableRouter.use(authenticate);
+payableRouter.get('/summary', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA, UserRole.VISUALIZADOR), controller.summary);
+payableRouter.get('/', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA, UserRole.VISUALIZADOR), controller.list);
+payableRouter.get('/:id', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA, UserRole.VISUALIZADOR), controller.getById);
+payableRouter.post('/:id/payments', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA), validateBody(registerPaymentSchema), controller.pay);
+payableRouter.post('/:id/payments/:paymentId/reverse', authorizeRoles(UserRole.ADMIN), validateBody(reversePaymentSchema), controller.reverse);
+payableRouter.post('/:id/cancel', authorizeRoles(UserRole.ADMIN), controller.cancel);

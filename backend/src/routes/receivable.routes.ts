@@ -1,0 +1,21 @@
+import { UserRole } from '@prisma/client';
+import { Router } from 'express';
+import { ReceivableController } from '../controllers/receivable.controller.js';
+import { authenticate } from '../middlewares/authenticate.middleware.js';
+import { authorizeRoles } from '../middlewares/authorize.middleware.js';
+import { validateBody } from '../middlewares/validate.middleware.js';
+import { PrismaReceivableRepository } from '../repositories/receivable.repository.js';
+import { registerCollectionSchema, reverseCollectionSchema } from '../schemas/receivable.schema.js';
+import { auditLogger } from '../services/audit.service.js';
+import { ReceivableService } from '../services/receivable.service.js';
+
+const controller = new ReceivableController(new ReceivableService(new PrismaReceivableRepository(), auditLogger));
+export const receivableRouter = Router();
+receivableRouter.use(authenticate);
+receivableRouter.get('/summary', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA, UserRole.VISUALIZADOR), controller.summary);
+receivableRouter.get('/clients/:clientId/statement', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA, UserRole.VISUALIZADOR), controller.statement);
+receivableRouter.get('/', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA, UserRole.VISUALIZADOR), controller.list);
+receivableRouter.get('/:id', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA, UserRole.VISUALIZADOR), controller.getById);
+receivableRouter.post('/:id/collections', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA), validateBody(registerCollectionSchema), controller.collect);
+receivableRouter.post('/:id/collections/:collectionId/reverse', authorizeRoles(UserRole.ADMIN), validateBody(reverseCollectionSchema), controller.reverse);
+receivableRouter.post('/:id/cancel', authorizeRoles(UserRole.ADMIN), controller.cancel);

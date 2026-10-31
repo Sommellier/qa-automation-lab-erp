@@ -1,0 +1,27 @@
+import { UserRole } from '@prisma/client';
+import { Router } from 'express';
+import { FiscalController } from '../controllers/fiscal.controller.js';
+import { authenticate } from '../middlewares/authenticate.middleware.js';
+import { authorizeRoles } from '../middlewares/authorize.middleware.js';
+import { uploadFiscalAttachment, uploadFiscalXmlBatch } from '../middlewares/fiscal-upload.middleware.js';
+import { validateBody } from '../middlewares/validate.middleware.js';
+import { PrismaFiscalRepository } from '../repositories/fiscal.repository.js';
+import { confirmFiscalImportSchema, fiscalCompanyInputSchema, updateFiscalLinksSchema } from '../schemas/fiscal.schema.js';
+import { auditLogger } from '../services/audit.service.js';
+import { FiscalService } from '../services/fiscal.service.js';
+
+const controller = new FiscalController(new FiscalService(new PrismaFiscalRepository(), auditLogger));
+export const fiscalRouter = Router();
+fiscalRouter.use(authenticate);
+fiscalRouter.get('/companies', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA, UserRole.VISUALIZADOR), controller.listCompanies);
+fiscalRouter.post('/companies', authorizeRoles(UserRole.ADMIN), validateBody(fiscalCompanyInputSchema), controller.createCompany);
+fiscalRouter.patch('/companies/:id', authorizeRoles(UserRole.ADMIN), validateBody(fiscalCompanyInputSchema), controller.updateCompany);
+fiscalRouter.post('/imports/preview', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA), uploadFiscalXmlBatch, controller.preview);
+fiscalRouter.get('/imports/:id', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA, UserRole.VISUALIZADOR), controller.getImportBatch);
+fiscalRouter.post('/imports/:id/confirm', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA), validateBody(confirmFiscalImportSchema), controller.confirm);
+fiscalRouter.get('/documents', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA, UserRole.VISUALIZADOR), controller.list);
+fiscalRouter.get('/documents/:id', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA, UserRole.VISUALIZADOR), controller.getById);
+fiscalRouter.patch('/documents/:id/links', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA), validateBody(updateFiscalLinksSchema), controller.updateLinks);
+fiscalRouter.post('/documents/:id/attachments', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA), uploadFiscalAttachment, controller.addAttachment);
+fiscalRouter.get('/documents/:id/attachments/:attachmentId/download', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA, UserRole.VISUALIZADOR), controller.downloadAttachment);
+fiscalRouter.delete('/documents/:id/attachments/:attachmentId', authorizeRoles(UserRole.ADMIN), controller.removeAttachment);

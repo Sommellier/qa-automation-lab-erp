@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+  <NFe>
+    <infNFe Id="NFe35261012345678000195550010000001231123456784" versao="4.00">
+      <ide><cUF>35</cUF><natOp>Compra para comercialização</natOp><mod>55</mod><serie>1</serie><nNF>123</nNF><dhEmi>2026-10-27T10:00:00-03:00</dhEmi><tpNF>1</tpNF></ide>
+      <emit><CNPJ>12345678000195</CNPJ><xNome>Fornecedor Fiscal de Demonstração</xNome></emit>
+      <dest><CNPJ>98765432000100</CNPJ><xNome>Empresa Fiscal de Demonstração</xNome></dest>
+      <det nItem="1"><prod><cProd>CHAIR001</cProd><xProd>Cadeira Office</xProd><NCM>94013900</NCM><CFOP>5102</CFOP><uCom>UN</uCom><qCom>2.0000</qCom><vUnCom>899.9000</vUnCom><vProd>1799.80</vProd></prod><imposto><ICMS><ICMS00><orig>0</orig><CST>00</CST><vBC>1799.80</vBC><pICMS>18.00</pICMS><vICMS>323.96</vICMS></ICMS00></ICMS></imposto></det>
+      <total><ICMSTot><vBC>1799.80</vBC><vICMS>323.96</vICMS><vProd>1799.80</vProd><vFrete>50.00</vFrete><vDesc>0.00</vDesc><vOutro>0.00</vOutro><vNF>1849.80</vNF></ICMSTot></total>
+    </infNFe>
+  </NFe>
+  <protNFe><infProt><chNFe>35261012345678000195550010000001231123456784</chNFe><dhRecbto>2026-10-27T10:01:00-03:00</dhRecbto><cStat>100</cStat><xMotivo>Autorizado o uso da NF-e</xMotivo></infProt></protNFe>
+</nfeProc>

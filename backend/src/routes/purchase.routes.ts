@@ -1,0 +1,25 @@
+import { UserRole } from '@prisma/client';
+import { Router } from 'express';
+import { PurchaseController } from '../controllers/purchase.controller.js';
+import { authenticate } from '../middlewares/authenticate.middleware.js';
+import { authorizeRoles } from '../middlewares/authorize.middleware.js';
+import { validateBody } from '../middlewares/validate.middleware.js';
+import { PrismaPurchaseRepository } from '../repositories/purchase.repository.js';
+import { createPurchaseSchema, purchaseApprovalCommentSchema, receivePurchaseSchema, rejectPurchaseSchema, updateApprovalRuleSchema } from '../schemas/purchase.schema.js';
+import { auditLogger } from '../services/audit.service.js';
+import { PurchaseService } from '../services/purchase.service.js';
+
+const controller = new PurchaseController(new PurchaseService(new PrismaPurchaseRepository(), auditLogger));
+export const purchaseRouter = Router();
+purchaseRouter.use(authenticate);
+purchaseRouter.get('/cost-history/:productId', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA, UserRole.VISUALIZADOR), controller.costHistory);
+purchaseRouter.get('/approval-rules', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA, UserRole.VISUALIZADOR), controller.listApprovalRules);
+purchaseRouter.patch('/approval-rules/:role', authorizeRoles(UserRole.ADMIN), validateBody(updateApprovalRuleSchema), controller.updateApprovalRule);
+purchaseRouter.get('/', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA, UserRole.VISUALIZADOR), controller.list);
+purchaseRouter.get('/:id', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA, UserRole.VISUALIZADOR), controller.getById);
+purchaseRouter.post('/', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA), validateBody(createPurchaseSchema), controller.create);
+purchaseRouter.post('/:id/receipts', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA), validateBody(receivePurchaseSchema), controller.receive);
+purchaseRouter.post('/:id/submit', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA), validateBody(purchaseApprovalCommentSchema), controller.submitForApproval);
+purchaseRouter.post('/:id/approve', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA), validateBody(purchaseApprovalCommentSchema), controller.approve);
+purchaseRouter.post('/:id/reject', authorizeRoles(UserRole.ADMIN, UserRole.ANALISTA), validateBody(rejectPurchaseSchema), controller.reject);
+purchaseRouter.post('/:id/cancel', authorizeRoles(UserRole.ADMIN), controller.cancel);
